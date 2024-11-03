@@ -1,0 +1,116 @@
+<!-- usersection.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <title>User Section</title>
+</head>
+<body>
+  <h1>Welcome to the User Section</h1>
+  <div id="userInfo">
+
+    <!-- User details will be displayed here -->
+    <p><strong>Username:</strong> <span id="username"></span></p>
+    <p><strong>Name:</strong> <span id="name"></span></p>
+    <p><strong>Password:</strong> <span id="password"></span></p>
+
+    <h2>Update User Information</h2><br>
+    <form id="updateForm">
+      <label for="updateName">Name:</label>
+      <input type="text" id="updateName" placeholder="Enter new name" required>
+      <br>
+      <label for="updatePassword">Password:</label>
+      <input type="password" id="updatePassword" placeholder="Enter new password" required>
+      <br>
+      <button type="submit">Update User</button>
+    </form><br>
+    <button id="deleteUserBtn">Delete User</button>
+  </div>
+
+  <script>
+    const baseUrl = "http://localhost:3000";
+    const token = localStorage.getItem("authToken");
+    let userId;
+  
+    async function loadUserData() {
+      try {
+        const response = await fetch(`${baseUrl}/user/profile`, {
+          headers: { Authorization: token },
+        });
+        const result = await response.json();
+        if (response.ok) {
+          document.getElementById("username").textContent = result.user.userName;
+          document.getElementById("name").textContent = result.user.name;
+          document.getElementById("password").textContent = result.user.password;
+          userId = result.user._id; // Store userId to use for delete
+        } else {
+          alert(result.message || "Failed to load user data");
+        }
+      } catch (error) {
+        console.error("Error loading user data:", error);
+      }
+    }
+  
+
+    async function deleteUser() {
+      try {
+        const response = await fetch(`${baseUrl}/user/${userId}`, {
+          method: "DELETE",
+          headers: { Authorization: token },
+        });
+        const result = await response.json();
+        if (response.ok) {
+          confirm( "Are you sure You Want to Delete the User?");
+          alert("User Deleted Successfully")
+          localStorage.removeItem("authToken"); // Clear token
+          window.location.href = "signup.html"; // Redirect to signup page
+        } else {
+          alert(result.message || "Failed to delete user");
+        }
+      } catch (error) {
+        console.error("Error deleting user:", error);
+      }
+    }
+  
+    document.getElementById("deleteUserBtn").addEventListener("click", deleteUser);
+    loadUserData();
+
+    // Update user
+async function updateUser(event) {
+  event.preventDefault(); // Prevent form from submitting the usual way
+
+  const updatedName = document.getElementById("updateName").value;
+  const updatedPassword = document.getElementById("updatePassword").value;
+
+  try {
+    const response = await fetch(`${baseUrl}/user/${userId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token,
+      },
+      body: JSON.stringify({
+        name: updatedName,
+        password: updatedPassword,
+      }),
+    });
+
+    const result = await response.json();
+    if (response.ok) {
+      alert(result.message || "User updated successfully");
+      loadUserData();
+    } else {
+      alert(result.message || "Failed to update user");
+    }
+  } catch (error) {
+    console.error("Error updating user:", error);
+  }
+}
+document.getElementById("updateForm").addEventListener("submit", updateUser);
+
+  </script>
+  
+</body>
+</html>
